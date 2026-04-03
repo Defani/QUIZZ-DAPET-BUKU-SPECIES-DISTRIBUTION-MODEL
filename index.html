@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuis — SDM & Dinamika Populasi Tumbuhan Invasif</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+:root {
+  --green:     #4caf6e;
+  --green2:    #6fcf8a;
+  --gold:      #e8c97a;
+  --gold2:     #f2d896;
+  --text:      #f0f4f1;
+  --muted:     rgba(255, 255, 255, 0.65);
+  --correct:   #5bde87;
+  --wrong:     #ff7070;
+  
+  /* Glassmorphism Variables */
+  --glass-bg:      rgba(20, 40, 25, 0.25);
+  --glass-border:  rgba(255, 255, 255, 0.1);
+  --glass-shadow:  0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --glass-blur:    blur(16px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: #08120a;
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Animated Gradient Blobs for Glassmorphism Background ── */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  pointer-events: none;
+  animation: float 20s infinite alternate ease-in-out;
+}
+body::before {
+  width: 600px; height: 600px;
+  background: rgba(76, 175, 110, 0.15);
+  top: -150px; left: -150px;
+}
+body::after {
+  width: 500px; height: 500px;
+  background: rgba(201, 168, 76, 0.12);
+  bottom: -150px; right: -150px;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(50px, 50px) scale(1.1); }
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 24px 100px;
+}
+
+/* ── Utility: Glass Panel ── */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+}
+
+/* ── Header ── */
+.header {
+  padding: 40px;
+  margin-bottom: 56px;
+  animation: riseUp 1s cubic-bezier(0.16,1,0.3,1) both;
+  text-align: center;
+}
+.header-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 20px;
+  border: 3px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: block;
+}
+.header-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: rgba(255,255,255,0.05);
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.leaf-icon {
+  width: 20px; height: 20px;
+  background: var(--green);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.eyebrow-text {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+}
+.header h1 {
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.header h1 em {
+  color: var(--green2);
+  font-style: normal;
+}
+.header-species {
+  font-size: 18px;
+  font-style: italic;
+  color: var(--gold);
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+.header-desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 650px;
+  margin: 0 auto 16px;
+  background: rgba(0,0,0,0.2);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.header-desc strong { color: var(--gold2); font-weight: 600; }
+.header-desc a {
+  color: var(--green2);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--green2);
+  transition: all 0.2s;
+}
+.header-desc a:hover {
+  color: var(--correct);
+  border-bottom-style: solid;
+}
+.header-instruction {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* ── Progress ── */
+.progress-section {
+  margin-bottom: 40px;
+  animation: fadeIn 0.6s ease both 0.4s;
+  padding: 20px;
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+}
+.prog-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.prog-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.prog-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+}
+.chip-c { color: var(--correct); border-color: rgba(91,222,135,0.4); background: rgba(91,222,135,0.1); }
+.chip-w { color: var(--wrong); border-color: rgba(255,112,112,0.4); background: rgba(255,112,112,0.1); }
+.chip-r { color: var(--muted); border-color: var(--glass-border); background: rgba(255,255,255,0.05); }
+.prog-track {
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 99px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--green), var(--gold));
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 12px rgba(76,175,110,0.6);
+}
+
+/* ── Section label ── */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 48px 0 24px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold2);
+}
+.sec-label::before {
+  content: ''; width: 8px; height: 8px; background: var(--gold2);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.sec-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(232,201,122,0.3), transparent);
+}
+
+/* ── Question card ── */
+.qcard {
+  padding: 32px;
+  margin-bottom: 24px;
+  animation: riseUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.qcard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0,0,0,0.4);
+  border-color: rgba(255,255,255,0.2);
+}
+.qcard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+}
+
+.qcard-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.qnum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.qtag {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.t-ecology  { background: rgba(76,175,110,0.15); color: #6fcf8a; }
+.t-maxent   { background: rgba(201,168,76,0.15); color: #e8c97a; }
+.t-populasi { background: rgba(120,180,255,0.15); color: #90caff; }
+.t-metode   { background: rgba(200,120,255,0.15); color: #d8a0ff; }
+.t-invasif  { background: rgba(255,160,80,0.15);  color: #ffb366; }
+.t-spasial  { background: rgba(80,200,220,0.15);  color: #70d8e8; }
+
+.qtext {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+.qtext strong { color: var(--gold2); font-weight: 600; }
+
+/* ── Options ── */
+.options { display: flex; flex-direction: column; gap: 12px; }
+.opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  line-height: 1.6;
+  background: rgba(255,255,255,0.02);
+  user-select: none;
+}
+.opt:hover:not(.dis) {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.25);
+  transform: translateX(4px);
+}
+.opt-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  transition: all 0.2s;
+}
+.opt.dis { cursor: default; }
+.opt.ok {
+  border-color: var(--correct) !important;
+  background: rgba(91,222,135,0.1) !important;
+}
+.opt.ok .opt-lbl { background: var(--correct); color: #000; border-color: var(--correct); }
+.opt.ng {
+  border-color: var(--wrong) !important;
+  background: rgba(255,112,112,0.1) !important;
+}
+.opt.ng .opt-lbl { background: var(--wrong); color: #000; border-color: var(--wrong); }
+
+/* ── Feedback ── */
+.fb {
+  display: none;
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.fb.show { display: block; animation: fadeIn 0.4s ease both; }
+.fb.ok { background: rgba(91,222,135,0.1); border: 1px solid rgba(91,222,135,0.3); color: #bdf5cf; }
+.fb.ng { background: rgba(255,112,112,0.1); border: 1px solid rgba(255,112,112,0.3); color: #ffcccc; }
+
+/* ── Submit ── */
+.submit-wrap { text-align: center; margin-top: 64px; }
+.btn-sub {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.05);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 18px 60px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+.btn-sub:hover:not(:disabled) {
+  background: var(--gold);
+  color: #000;
+  box-shadow: 0 0 20px rgba(232,201,122,0.4);
+}
+.btn-sub:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--muted); color: var(--muted); }
+
+/* ── Result ── */
+#result { display: none; text-align: center; animation: riseUp 0.8s cubic-bezier(0.16,1,0.3,1) both; padding: 40px; }
+.res-plant { font-size: 72px; margin-bottom: 16px; display: block; filter: drop-shadow(0 0 10px rgba(76,175,110,0.5)); }
+.res-title {
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.res-title.pass { color: var(--correct); }
+.res-title.fail { color: var(--wrong); }
+.res-score {
+  font-size: 80px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -2px;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.res-score.pass { color: var(--green); }
+.res-score.fail { color: var(--wrong); }
+.res-sub { color: var(--muted); font-size: 15px; margin-bottom: 48px; line-height: 1.8; }
+
+.btn-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--green);
+  color: #000;
+  text-decoration: none;
+  padding: 16px 40px;
+  border-radius: 30px;
+  transition: all 0.3s;
+  box-shadow: 0 8px 24px rgba(76,175,110,0.4);
+}
+.btn-dl:hover { background: var(--green2); box-shadow: 0 12px 32px rgba(76,175,110,0.6); transform: translateY(-3px); }
+
+.fail-box {
+  max-width: 500px;
+  margin: 0 auto 36px;
+  background: rgba(255,112,112,0.1);
+  border: 1px solid rgba(255,112,112,0.3);
+  border-radius: 16px;
+  padding: 32px;
+  color: #ffcccc;
+  font-size: 14px;
+  line-height: 1.9;
+  backdrop-filter: blur(10px);
+}
+.btn-retry {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  border: 1px solid var(--glass-border);
+  padding: 14px 36px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 16px;
+}
+.btn-retry:hover { background: rgba(255,255,255,0.1); }
+
+/* ── Animations ── */
+@keyframes riseUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+
+  <h1>Kuis Pemahaman Membaca Paper</em></h1>
+  <div class="header-species">Untuk Mendapat Ebook Gratisss.</div>
+  
+  <p class="header-desc">
+    Untuk memahami soal ini, Anda dapat membaca paper: <br>
+    <strong>NASIHIN, I., WIDHIONO, I., SUDIANA, E., HERLINA, N., & IMANINGSIH, W. (2024).</strong> <br>
+    <em>Species distribution model and population dynamics of invasive alien plant Calliandra calothyrsus in Gunung Ciremai National Park, West Java, Indonesia.</em> Biodiversitas: Journal of Biological Diversity, 25(12). <br>
+    <a href="https://smujo.id/biodiv/article/view/20090" target="_blank">Baca dan unduh artikel aslinya di sini</a>.
+  </p>
+  
+  <p class="header-instruction">
+    Jawab <strong>25 soal</strong> di bawah ini dengan benar untuk mendapat buku PDF-nya!
+  </p>
+</div>
+
+<div id="quiz">
+  <div class="progress-section glass-panel">
+    <div class="prog-row">
+      <span class="prog-label" id="prog-txt">0 / 25 terjawab</span>
+      <div class="prog-chips">
+        <span class="chip chip-c">✓ <span id="sc">0</span></span>
+        <span class="chip chip-w">✗ <span id="sw">0</span></span>
+        <span class="chip chip-r">Sisa <span id="sr">25</span></span>
+      </div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="pbar" style="width:0%"></div></div>
+  </div>
+
+  <div id="qwrap"></div>
+
+  <div class="submit-wrap">
+    <button class="btn-sub" id="bsub" disabled onclick="submitAll()">Lihat Hasil Akhir →</button>
+    <p style="color:var(--muted); font-size:12px; margin-top:20px; letter-spacing:1px; font-weight: 300;">Jawab semua soal terlebih dahulu</p>
+  </div>
+</div>
+
+<div id="result" class="glass-panel">
+  <span class="res-plant" id="rico"></span>
+  <div class="res-title" id="rtit"></div>
+  <div class="res-score" id="rsco"></div>
+  <div class="res-sub" id="rsub"></div>
+  <div id="ract"></div>
+  <br>
+  <button class="btn-retry" onclick="retryAll()">↺ Ulangi Kuis</button>
+</div>
+
+</div><script>
+const PDF_URL = "https://drive.google.com/file/d/1RLqXvkuHMnf3UbvpACX9Iq6o_Bv1o2aI/view?usp=drivesdk"; // ← ganti setelah dapat link
+
+// Efek Suara
+const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+const soundNg = new Audio('https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3');
+
+const Q = [
+// ══ BAGIAN 1: LATAR BELAKANG & LOKASI ══════════════════════════
+{sec:"Latar Belakang & Lokasi Penelitian", tag:"t-ecology", tl:"EKOLOGI",
+ t:"Apa ancaman utama yang ditimbulkan oleh tumbuhan asing invasif terhadap kawasan konservasi menurut artikel ini?",
+ o:["Mendominasi komposisi spesies dan mengurangi keanekaragaman hayati asli",
+    "Meningkatkan keanekaragaman hayati dengan memperkenalkan spesies baru",
+    "Mempercepat suksesi ekologis menuju klimaks hutan",
+    "Meningkatkan produktivitas lahan melalui fiksasi nitrogen"],
+ a:0, fb:"Tumbuhan invasif mengancam kawasan konservasi dengan cara mendominasi komposisi spesies dan mengurangi keanekaragaman hayati, serta berpotensi menyebabkan PADDD[cite: 14, 15, 36]."},
+
+{tag:"t-ecology", tl:"EKOLOGI",
+ t:"Pada tahun berapa <strong>Calliandra calothyrsus</strong> pertama kali diintroduksi ke kawasan Gunung Ciremai, dan untuk tujuan apa?",
+ o:["1945, sebagai tanaman penghijauan program reboisasi nasional",
+    "1985, sebagai tanaman pakan ternak dalam program penghijauan DAS",
+    "1973, sebagai tanaman sela (intercrop) dan bahan bakar kayu bakar saat masih berstatus hutan produksi Perhutani",
+    "2000, secara tidak sengaja terbawa melalui transportasi material kayu"],
+ a:2, fb:"C. calothyrsus diintroduksi ke kawasan Gunung Ciremai pada tahun 1973 sebagai tanaman sela dan sumber kayu bakar ketika kawasan tersebut masih berfungsi sebagai hutan produksi di bawah pengelolaan Perum Perhutani[cite: 45]."},
+
+{tag:"t-ecology", tl:"EKOLOGI",
+ t:"Berapa luas area yang telah ditempati oleh <strong>C. calothyrsus</strong> di TNGC berdasarkan data yang digunakan dalam studi ini, dan pada ketinggian berapa sebarannya?",
+ o:["153.40 ha, pada ketinggian 200–800 mdpl",
+    "1.204 ha, tersebar merata di seluruh zona taman nasional",
+    "502.75 ha, pada ketinggian 400–1200 mdpl",
+    "302.62 ha, pada ketinggian 600–1500 mdpl"],
+ a:3, fb:"Berdasarkan laporan BTNGC, C. calothyrsus telah menempati area seluas 302.62 ha di TNGC dan tersebar pada ketinggian 600–1500 mdpl[cite: 44]."},
+
+{tag:"t-ecology", tl:"EKOLOGI",
+ t:"Berapa luas total kawasan Taman Nasional Gunung Ciremai (TNGC), dan di koordinat geografis berapa lokasinya?",
+ o:["8.450,30 Ha; 107°19′–107°29′ BT dan 5°46′–5°58′ LS",
+    "14.841,30 Ha; 108°19′–108°29′ BT dan 6°46′–6°58′ LS",
+    "22.500,00 Ha; 108°10′–108°40′ BT dan 6°30′–7°10′ LS",
+    "10.250,75 Ha; 107°50′–108°10′ BT dan 6°00′–6°30′ LS"],
+ a:1, fb:"TNGC memiliki luas 14.841,30 Ha, berlokasi pada koordinat 108°19′18″–108°29′30″ BT dan 6°46′57″–6°58′57″ LS di Provinsi Jawa Barat[cite: 62]."},
+
+// ══ BAGIAN 2: METODE & DATA ══════════════════════════════════════
+{sec:"Metodologi & Pengumpulan Data", tag:"t-metode", tl:"METODE",
+ t:"Berapa total variabel lingkungan awal yang diuji sebelum dilakukan seleksi berdasarkan uji kolinearitas, dan berapa yang akhirnya digunakan sebagai prediktor model?",
+ o:["17 variabel awal, 13 digunakan sebagai prediktor final",
+    "10 variabel awal, 8 digunakan sebagai prediktor final",
+    "20 variabel awal, 15 digunakan sebagai prediktor final",
+    "13 variabel awal, 10 digunakan sebagai prediktor final"],
+ a:0, fb:"Peneliti menggunakan 17 variabel lingkungan awal (iklim dan fisik)[cite: 99]. Setelah uji kolinearitas, empat variabel dikeluarkan sehingga tersisa 13 variabel prediktor final[cite: 19]."},
+
+{tag:"t-metode", tl:"METODE",
+ t:"Empat variabel lingkungan manakah yang dikeluarkan dari model berdasarkan hasil uji kolinearitas (korelasi Pearson > 0,75)?",
+ o:["BIO1, BIO4, BIO12, dan elevasi",
+    "kemiringan lereng, bulk density, KTK, dan pH tanah",
+    "BIO5 (suhu max musim kering), BIO6 (suhu min musim hujan), BIO14 (curah hujan musim kering), dan nitrogen",
+    "BIO13, evapotranspirasi, tipe tanah, dan tutupan lahan"],
+ a:2, fb:"Berdasarkan uji kolinearitas, variabel yang memiliki korelasi kuat dan dikeluarkan adalah: suhu maksimum musim kering (BIO5), suhu minimum musim hujan (BIO6), curah hujan musim kering (BIO14), dan nitrogen tanah[cite: 130]."},
+
+{tag:"t-metode", tl:"METODE",
+ t:"Sumber data tutupan lahan dalam penelitian ini berasal dari interpretasi citra satelit apa, dengan resolusi berapa?",
+ o:["Citra Landsat 8 OLI, resolusi 30 m",
+    "Citra MODIS Terra, resolusi 250 m",
+    "Citra WorldView-3, resolusi 0,3 m",
+    "Citra Sentinel-2, resolusi 10 m"],
+ a:3, fb:"Data tutupan lahan diperoleh dari interpretasi citra satelit Sentinel-2 dengan resolusi 10 m[cite: 103]."},
+
+{tag:"t-metode", tl:"METODE",
+ t:"Desain petak contoh untuk pengumpulan data populasi <strong>C. calothyrsus</strong> menggunakan petak berukuran berapa, dan berapa jumlah total petak yang digunakan?",
+ o:["Petak 10×10 m, sebanyak 98 petak dengan jarak 100 m",
+    "Petak 20×20 m, sebanyak 50 petak dengan jarak 200 m",
+    "Petak 5×5 m, sebanyak 200 petak dengan jarak 50 m",
+    "Petak 25×25 m, sebanyak 40 petak dengan jarak 500 m"],
+ a:0, fb:"Desain sampling menggunakan petak tunggal 10×10 m sebanyak 98 petak[cite: 20]. Setiap petak dibagi menjadi subplot: 2×2 m untuk semai, 5×5 m untuk pancang, dan 10×10 m untuk pohon[cite: 108]."},
+
+{tag:"t-metode", tl:"METODE",
+ t:"Berapa total data kehadiran (occurrence) awal yang dikumpulkan untuk <strong>C. calothyrsus</strong>, dan berapa yang digunakan setelah resampling untuk menghindari autokorelasi spasial?",
+ o:["300 data awal, 250 digunakan setelah resampling",
+    "500 data awal, 430 digunakan setelah resampling",
+    "411 data awal, 361 digunakan setelah resampling",
+    "250 data awal, 200 digunakan setelah resampling"],
+ a:2, fb:"Total 411 data kehadiran dikumpulkan melalui survei[cite: 121]. Setelah resampling untuk menghindari autokorelasi spasial pada resolusi 10 m, hanya 361 data yang digunakan[cite: 122]."},
+
+// ══ BAGIAN 3: MAXENT & HABITAT SUITABILITY ═══════════════════════
+{sec:"Pemodelan MaxEnt & Kesesuaian Habitat", tag:"t-maxent", tl:"MAXENT",
+ t:"Nilai AUC yang dihasilkan oleh simulasi MaxEnt dalam penelitian ini adalah berapa, dan termasuk kategori performa model apa?",
+ o:["AUC = 0.750, kategori cukup (fair)",
+    "AUC = 0.950, kategori sangat baik (excellent)",
+    "AUC = 0.680, kategori buruk (poor)",
+    "AUC = 0.813, kategori baik (good)"],
+ a:3, fb:"Nilai AUC yang dihasilkan adalah 0.813 dengan standar deviasi 0.20[cite: 191]. Nilai ini masuk kategori good/baik berdasarkan kriteria Srivastava et al.[cite: 192]."},
+
+{tag:"t-maxent", tl:"MAXENT",
+ t:"Berapa proporsi data yang digunakan sebagai training set dan testing set dalam pemodelan MaxEnt pada penelitian ini?",
+ o:["50% training, 50% testing",
+    "75% training, 25% testing (random test set)",
+    "80% training, 20% testing",
+    "90% training, 10% testing"],
+ a:1, fb:"Sebanyak 75% data kehadiran digunakan sebagai training set dan 25% sisanya sebagai random test set[cite: 135]. Lima replikasi dilakukan untuk memvalidasi kerobustasan model[cite: 137]."},
+
+{tag:"t-maxent", tl:"MAXENT",
+ t:"Tiga variabel prediktor dengan kontribusi paling dominan terhadap model kesesuaian habitat <strong>C. calothyrsus</strong> adalah:",
+ o:["Tutupan lahan (47,9%), curah hujan tahunan/BIO12 (20,7%), dan suhu musiman/BIO4 (16,1%)",
+    "Elevasi (25,2%), tipe tanah (25,1%), dan curah hujan tahunan (18,4%)",
+    "pH tanah (40,3%), bulk density (22,5%), dan evapotranspirasi (15,7%)",
+    "KTK tanah (25,0%), kemiringan lereng (28,2%), dan curah hujan musim hujan/BIO13 (18,9%)"],
+ a:0, fb:"Tutupan lahan memiliki kontribusi terbesar (47,9%), diikuti curah hujan tahunan (20,7%), dan suhu (16,1%)[cite: 259]."},
+
+{tag:"t-maxent", tl:"MAXENT",
+ t:"Berapa luas habitat yang SESUAI dan TIDAK SESUAI untuk <strong>C. calothyrsus</strong> di TNGC berdasarkan hasil model MaxEnt?",
+ o:["Sesuai: 9.500 ha (64%), Tidak sesuai: 5.341 ha (36%)",
+    "Sesuai: 12.000 ha (80,9%), Tidak sesuai: 2.841 ha (19,1%)",
+    "Sesuai: 6.641,9 ha (44,75%), Tidak sesuai: 8.199,4 ha (55,25%)",
+    "Sesuai: 3.200 ha (21,6%), Tidak sesuai: 11.641 ha (78,4%)"],
+ a:2, fb:"Diidentifikasi bahwa 8.199,395 ha (55,25%) dari GCNP tidak sesuai untuk C. calothyrsus, sementara 6.641,905 ha (44,75%) adalah sesuai[cite: 201]."},
+
+{tag:"t-maxent", tl:"MAXENT",
+ t:"Apa fungsi threshold P10 (ten percentile training occurrences Cloglog) yang digunakan dalam penelitian ini untuk membuat peta kesesuaian habitat?",
+ o:["Menetapkan bahwa hanya 10% piksel dengan nilai tertinggi yang diklasifikasikan sebagai habitat sesuai",
+    "Memisahkan data training dan testing sebesar 10% dari total data",
+    "Menentukan bahwa spesies hanya dapat bertahan di habitat dengan curah hujan minimal 10 mm/bulan",
+    "Menghapus data kehadiran dengan nilai kesesuaian di bawah 10%, berdasarkan asumsi bahwa lokasi jauh tidak merepresentasikan habitat umum spesies"],
+ a:3, fb:"Threshold P10 mengeliminasi rekaman kehadiran dengan nilai kesesuaian habitat < 10% selama proses training, berdasarkan asumsi bahwa lokasi terpencil tidak merepresentasikan habitat umumnya[cite: 142]."},
+
+{tag:"t-maxent", tl:"MAXENT",
+ t:"Mengapa nilai AUC pada penelitian ini (0.813) berbeda dengan studi Yudaputra (2020) pada spesies yang sama, meski menggunakan metode yang serupa?",
+ o:["Karena perbedaan resolusi data (10 m vs 900 m) dan perbedaan jumlah/jenis variabel prediktor yang digunakan",
+    "Karena jumlah data kehadiran yang digunakan berbeda secara signifikan",
+    "Karena Yudaputra (2020) menggunakan algoritma yang berbeda (BioClim bukan MaxEnt)",
+    "Karena lokasi studi berada di pulau berbeda (Jawa vs Bali)"],
+ a:0, fb:"Perbedaan ini disebabkan oleh penggunaan resolusi data yang berbeda (10 m pada studi ini dibandingkan 900 m pada studi sebelumnya) [cite: 194] serta perbedaan jumlah dan jenis variabel prediktor[cite: 195]."},
+
+// ══ BAGIAN 4: POPULASI & LESLIE MATRIX ═══════════════════════════
+{sec:"Struktur Populasi & Leslie Matrix", tag:"t-populasi", tl:"POPULASI",
+ t:"Berapa total individu <strong>C. calothyrsus</strong> yang tercatat di lokasi sampling, dan berapa densitasnya?",
+ o:["842 individu dengan densitas 9.750 individu/ha",
+    "2.340 individu dengan densitas 25.200 individu/ha",
+    "1.581 individu dengan densitas 21.529,08 individu/ha",
+    "980 individu dengan densitas 12.000 individu/ha"],
+ a:2, fb:"Total populasi C. calothyrsus tercatat sebanyak 1.581 individu dengan densitas 21.529,08 ind/ha[cite: 164]. Proporsinya adalah semai 47,06%, pancang 35,04%, dan pohon 17,90%[cite: 165]."},
+
+{tag:"t-populasi", tl:"POPULASI",
+ t:"Bagaimana kriteria pengelompokan fase pertumbuhan <strong>C. calothyrsus</strong> dalam penelitian ini?",
+ o:["Semai: < 1 m; pancang: 1–5 m; pohon: > 5 m",
+    "Semai: diameter < 5 cm; pancang: 5–20 cm; pohon: > 20 cm DBH",
+    "Semai: 0–1 tahun; pancang: 1–5 tahun; pohon: > 5 tahun",
+    "Semai: < 2 m (belum reproduktif); pancang: 2–12 m (reproduktif); pohon: > 12 m (reproduktif)"],
+ a:3, fb:"Semai didefinisikan sebagai individu < 2m yang belum reproduktif[cite: 167]. Pancang (2-12m) dan pohon (>12m) telah mampu berbunga dan berbuah (reproduktif)[cite: 113, 114]."},
+
+{tag:"t-populasi", tl:"POPULASI",
+ t:"Berapa nilai fekunditas (fecundity) <strong>C. calothyrsus</strong> pada fase pancang (sapling) dan fase pohon (tree) dalam penelitian ini?",
+ o:["F pancang = 0.94; F pohon = 0.83",
+    "F pancang = 0.72; F pohon = 0.63",
+    "F pancang = 1.20; F pohon = 1.05",
+    "F pancang = 0.51; F pohon = 0.49"],
+ a:0, fb:"Fekunditas pada fase pancang adalah 0.94, dan pada fase pohon adalah 0.83[cite: 171]."},
+
+{tag:"t-populasi", tl:"POPULASI",
+ t:"Nilai eigenvalue (λ) dari matriks populasi <strong>C. calothyrsus</strong> adalah 1,20. Apa interpretasinya terhadap dinamika populasi?",
+ o:["Populasi menurun dengan laju 20% per tahun karena λ < 2",
+    "Populasi tumbuh dengan laju intrinsik 20% per periode (λ > 1 berarti populasi meningkat)",
+    "Populasi stabil tanpa pertumbuhan karena λ mendekati 1",
+    "Populasi akan punah dalam 20 tahun karena nilai λ terlalu rendah"],
+ a:1, fb:"Nilai eigenvalue matriks (λ) sebesar 1.20 menunjukkan populasi mengalami peningkatan atau pertumbuhan invasif positif (karena λ > 1)[cite: 187]."},
+
+{tag:"t-populasi", tl:"POPULASI",
+ t:"Transisi fase mana yang memiliki nilai elastisitas matriks tertinggi dalam model populasi <strong>C. calothyrsus</strong>?",
+ o:["Transisi dari pohon ke pohon (survival pohon dewasa), nilai 0.49",
+    "Transisi dari pancang ke pohon (G₂.₂), nilai 0.51",
+    "Transisi dari semai ke pancang (G₂.₁), nilai 0.34",
+    "Fekunditas pancang (F₁.₂), nilai 0.94"],
+ a:2, fb:"Elastisitas matriks tertinggi ada pada transisi dari fase semai ke pancang dengan nilai 0.34[cite: 188]."},
+
+{tag:"t-populasi", tl:"POPULASI",
+ t:"Berapa nilai G₂.₁ (probabilitas semai berkembang menjadi pancang) dan G₂.₂ (probabilitas pancang berkembang menjadi pohon) dalam penelitian ini?",
+ o:["G₂.₁ = 0.51; G₂.₂ = 0.74",
+    "G₂.₁ = 0.94; G₂.₂ = 0.83",
+    "G₂.₁ = 0.26; G₂.₂ = 0.49",
+    "G₂.₁ = 0.74; G₂.₂ = 0.51"],
+ a:3, fb:"G₂.₁ (probabilitas semai ke pancang) adalah 0.74 [cite: 180], dan G₂.₂ (probabilitas pancang ke pohon) adalah 0.51[cite: 181]."},
+
+// ══ BAGIAN 5: RANGESHIFTER & DISPERSAL ═══════════════════════════
+{sec:"Simulasi RangeShifter & Dispersal", tag:"t-spasial", tl:"SPASIAL",
+ t:"Perangkat lunak apa yang digunakan untuk menganalisis distribusi spasial dan dispersal populasi <strong>C. calothyrsus</strong> di tingkat lanskap?",
+ o:["RangeShifter versi 2.0 (Bocedi et al., 2021)",
+    "ArcGIS Pro 3.0 dengan ekstensi Spatial Analyst",
+    "FRAGSTATS 4.2 untuk analisis pola lanskap",
+    "R dengan paket 'dismo' dan 'spatstat'"],
+ a:0, fb:"Analisis distribusi spasial di tingkat lanskap dilakukan menggunakan perangkat lunak RANGESHIFTER versi 2.0[cite: 153]."},
+
+{tag:"t-spasial", tl:"SPASIAL",
+ t:"Berapa lama durasi simulasi dispersal populasi <strong>C. calothyrsus</strong> yang dilakukan dalam penelitian ini?",
+ o:["10 tahun ke depan dengan 5 replikasi",
+    "100 tahun ke depan dengan 3 replikasi",
+    "50 tahun ke depan dengan 2 replikasi",
+    "25 tahun ke depan dengan 10 replikasi"],
+ a:2, fb:"Simulasi dinamika distribusi populasi C. calothyrsus diaplikasikan selama 50 tahun [cite: 154] dan dijalankan dengan dua replikasi[cite: 157]."},
+
+{tag:"t-spasial", tl:"SPASIAL",
+ t:"Berapa rata-rata occupancy suitability (mean occupancy) populasi <strong>C. calothyrsus</strong> selama keseluruhan simulasi 50 tahun?",
+ o:["10,63% dengan tren menurun di akhir simulasi",
+    "48,83% dengan pertumbuhan stagnasi setelah tahun ke-30",
+    "74,20% menunjukkan dominasi hampir penuh",
+    "26,93% dengan standar deviasi 0,00029"],
+ a:3, fb:"Rata-rata kesesuaian hunian (occupancy suitability) selama simulasi adalah 26,93%, dengan standar deviasi 0,00029[cite: 280]."},
+
+{tag:"t-spasial", tl:"SPASIAL",
+ t:"Bagaimana pola pertumbuhan populasi <strong>C. calothyrsus</strong> berdasarkan hasil simulasi 50 tahun dengan RangeShifter?",
+ o:["Pertumbuhan lambat dari tahun 0 hingga 10, kemudian meningkat signifikan dari tahun 10 hingga 50",
+    "Pertumbuhan cepat di awal (0–10 tahun) kemudian melandai dan stabil",
+    "Populasi fluktuatif mengikuti siklus musiman tanpa tren yang jelas",
+    "Populasi menurun setelah tahun ke-30 akibat kompetisi intra-spesifik"],
+ a:0, fb:"Populasi berada pada tahap berkembang; pertumbuhannya lambat dari tahun 0 ke 10, lalu terjadi peningkatan signifikan dari tahun 10 ke 50[cite: 278]."}
+];
+
+// ── Logic ──────────────────────────────────────────────────────────
+const T = Q.length;
+let ans  = new Array(T).fill(null);
+let done = new Array(T).fill(false);
+
+function buildQuiz(){
+  const w = document.getElementById('qwrap');
+  w.innerHTML = '';
+  document.getElementById('prog-txt').textContent = `0 / ${T} terjawab`;
+  document.getElementById('sr').textContent = T;
+  document.getElementById('sc').textContent = 0;
+  document.getElementById('sw').textContent = 0;
+
+  let lastSec = '';
+  Q.forEach((q,i)=>{
+    if(q.sec && q.sec !== lastSec){
+      lastSec = q.sec;
+      w.innerHTML += `<div class="sec-label">${q.sec}</div>`;
+    }
+    const opts = q.o.map((o,j)=>`
+      <div class="opt" id="o${i}-${j}" onclick="pick(${i},${j})">
+        <span class="opt-lbl">${String.fromCharCode(65+j)}</span>
+        <span>${o}</span>
+      </div>`).join('');
+    w.innerHTML += `
+      <div class="qcard glass-panel" id="qc${i}" style="animation-delay:${(i%5)*0.05}s">
+        <div class="qcard-top">
+          <span class="qnum">Soal ${i+1} / ${T}</span>
+          <span class="qtag ${q.tag}">${q.tl}</span>
+        </div>
+        <div class="qtext">${q.t}</div>
+        <div class="options">${opts}</div>
+        <div class="fb" id="fb${i}"></div>
+      </div>`;
+  });
+}
+
+function pick(qi,oi){
+  if(done[qi]) return;
+  done[qi]=true; ans[qi]=oi;
+  const ca = Q[qi].a;
+  
+  const ok = oi === ca;
+  
+  // Putar Efek Suara
+  if(ok) {
+    soundOk.currentTime = 0; 
+    soundOk.play().catch(e => console.log(e));
+  } else {
+    soundNg.currentTime = 0; 
+    soundNg.play().catch(e => console.log(e));
+  }
+  
+  Q[qi].o.forEach((_,j)=>{
+    const el=document.getElementById(`o${qi}-${j}`);
+    el.classList.add('dis');
+    if(j===ca) el.classList.add('ok');
+    if(j===oi && oi!==ca) el.classList.add('ng');
+  });
+  
+  const fb=document.getElementById(`fb${qi}`);
+  fb.className=`fb show ${ok?'ok':'ng'}`;
+  fb.innerHTML=ok?`✓ ${Q[qi].fb}`:`✗ Jawaban kurang tepat. ${Q[qi].fb}`;
+  updateProg();
+  
+  // Auto-Scroll ke soal berikutnya setelah delay singkat
+  if (qi < T - 1) {
+    setTimeout(() => {
+      const nextCard = document.getElementById(`qc${qi + 1}`);
+      if (nextCard) {
+        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 1200); // Delay 1.2 detik
+  }
+}
+
+function updateProg(){
+  const tot=done.filter(Boolean).length;
+  const c=ans.filter((a,i)=>done[i]&&a===Q[i].a).length;
+  const wr=tot-c;
+  document.getElementById('prog-txt').textContent=`${tot} / ${T} terjawab`;
+  document.getElementById('pbar').style.width=`${(tot/T)*100}%`;
+  document.getElementById('sc').textContent=c;
+  document.getElementById('sw').textContent=wr;
+  document.getElementById('sr').textContent=T-tot;
+  if(tot===T) document.getElementById('bsub').disabled=false;
+}
+
+function submitAll(){
+  const score=ans.filter((a,i)=>a===Q[i].a).length;
+  const pass=score===T;
+  
+  document.getElementById('quiz').style.display='none';
+  document.getElementById('hdr').style.display='none';
+  
+  const r=document.getElementById('result');
+  r.style.display='block';
+  document.getElementById('rico').textContent=pass?'🌿':'📖';
+  document.getElementById('rtit').className=`res-title ${pass?'pass':'fail'}`;
+  document.getElementById('rtit').textContent=pass?'Luar Biasa! Akses Diberikan':'Belum Memenuhi Syarat';
+  document.getElementById('rsco').className=`res-score ${pass?'pass':'fail'}`;
+  document.getElementById('rsco').textContent=`${score} / ${T}`;
+  document.getElementById('rsub').textContent=pass
+    ?'Seluruh jawaban benar. Unduhan paper PDF telah dibuka.'
+    :`${T-score} jawaban masih perlu diperbaiki. Pelajari kembali dan coba lagi.`;
+  document.getElementById('ract').innerHTML=pass?`
+    <div class="glass-panel" style="max-width:520px; margin:0 auto 36px; padding:36px; background: rgba(76,175,110,0.1); border-color:rgba(76,175,110,0.3);">
+      <h3 style="color:var(--green2); font-size:20px; margin-bottom:10px;">📄 Ebook Siap Diunduh</h3>
+      <p style="color:var(--muted); font-size:14px; margin-bottom:24px;">Selamat! Anda telah memahami isi artikel ilmiah ini secara menyeluruh.</p>
+      <a class="btn-dl" href="${PDF_URL}" target="_blank">⬇ Unduh Full Paper PDF</a>
+    </div>`:`
+    <div class="fail-box">
+      Skor minimum yang diperlukan: <strong style="color:var(--wrong)">${T} / ${T}</strong><br><br>
+      Perhatikan kembali bagian-bagian yang ditandai merah. Setiap soal dilengkapi penjelasan untuk membantu pemahaman.
+    </div>`;
+    
+  window.scrollTo({top:0,behavior:'smooth'});
+  
+  // Animasi Confetti jika lulus
+  if (pass) {
+    var duration = 3000;
+    var end = Date.now() + duration;
+
+    (function frame() {
+      confetti({
+        particleCount: 5,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#4caf6e', '#e8c97a', '#ffffff']
+      });
+      confetti({
+        particleCount: 5,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#4caf6e', '#e8c97a', '#ffffff']
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
+  }
+}
+
+function retryAll(){
+  ans=new Array(T).fill(null);
+  done=new Array(T).fill(false);
+  document.getElementById('result').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  document.getElementById('hdr').style.display='block';
+  document.getElementById('bsub').disabled=true;
+  buildQuiz(); updateProg();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+buildQuiz();
+</script>
+</body>
+</html>
